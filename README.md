@@ -3,7 +3,7 @@
 ------------
 ### 27_Dec_2018
 
-finish accessing word embedding
+finish accessing word embedding  
 next : sentence split 
 
 ------------
