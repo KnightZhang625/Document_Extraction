@@ -4,8 +4,10 @@
 # @Last Modified by:    Jiaxin Zhang
 # @Last Modified time:  27/Dec/2018  
 
+import multiprocessing
 import re
 import sys
+import time
 from collections import Counter
 from pathlib import Path
 
@@ -56,10 +58,46 @@ class FeatureExtraction(object):
         '''
             args : documents should be list contains multiple sentences
         '''
-        preprocess = PreprocessAPI(stopword_path, user_dict_path)                   # tokenize the sentence
-        sentence_tokenized = preprocess.preProcess(documents)   
+        ################################ try multiprocessing #############################################   
+        multiprocessing.freeze_support()
+        self.cpu_count = multiprocessing.cpu_count()
+        pool = multiprocessing.Pool(processes=self.cpu_count)
+
+        data = self._splitData(documents)                                           # split data for each process
+        results = pool.map_async(PreprocessAPI().preProcess, (d for d in data))
+        pool.close()
+        
+        sentence_tokenized = []
+        for r in results.get():
+            sentence_tokenized.extend(r)
+        ##################################################################################################
         return self._build_sentence_embedding(sentence_tokenized)
     
+    def _splitData(self, sentence_tokenized):
+        '''
+            use to figure out the index of each splitted data
+        '''
+        start_num = len(sentence_tokenized)                     # start_num indicates the least number which could be divided by the cpu_count
+        if start_num < self.cpu_count:                          # if the start_num less than the cpu_count, initialize it as 1
+            interval = 1
+        else:
+            while start_num % self.cpu_count != 0:              # cannot be divided
+                start_num += 1
+            interval = int(start_num / self.cpu_count)          
+   
+        data_split = []
+        left = len(sentence_tokenized)
+        start_index = 0
+        while left >= interval:
+            data_split.append(sentence_tokenized[start_index : start_index + interval])
+            start_index += interval
+            left -= interval
+
+        if left == 0:                                           # no left data
+            return data_split
+        data_split.append(sentence_tokenized[start_index : ])
+        return data_split
+
     def _build_sentence_embedding(self, sentence_tokenized):
         sentence_matrix = np.zeros([len(sentence_tokenized), self.embedding_dim])    
         for index, sentence in enumerate(sentence_tokenized):

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: Jiaxin Zhang
 # @Date:   26/Dec/2018
-# @Last Modified by:    
-# @Last Modified time:  
+# @Last Modified by:    02/Jan/2019
+# @Last Modified time:  02/Jan/2019
 
 import re
 import sys
@@ -29,12 +29,51 @@ class TextRank(object):
         '''
             sentence_matrix : each row indicates a sentence embedding
         '''
-        sentence_count = sentence_matrix.shape[0]                     # acquire the number of sentences
-        similiar_matrix = np.zeros([sentence_count, sentence_count])  # initial the similarity matrix
-        for i in range(sentence_count):
-            for j in range(sentence_count):
-                if i != j:
-                    similiar_matrix[i][j] = cosine_similarity(sentence_matrix[i].reshape(1, -1), sentence_matrix[j].reshape(1, -1)).squeeze()
+        # sentence_count = sentence_matrix.shape[0]                     # acquire the number of sentences
+        # similiar_matrix = np.zeros([sentence_count, sentence_count])  # initial the similarity matrix, no need to initialize while using advanced algorithm
+
+        ################################ naive algorithm #############################################
+        # for i in range(sentence_count):
+        #     for j in range(sentence_count):
+        #         if i != j:
+        #             similiar_matrix[i][j] = cosine_similarity(sentence_matrix[i].reshape(1, -1), sentence_matrix[j].reshape(1, -1)).squeeze()
+        ##############################################################################################
+
+        ############################### optimized algorithm ##########################################
+        # for i in range(sentence_count):
+        #     for j in range(sentence_count):
+        #         if j < i:                                               # similarity between j and i equal to similarity between i and j ,
+        #             similiar_matrix[i][j] = similiar_matrix[j][i]       # which has been calculated in the prevous step
+        #         else:
+        #             similiar_matrix[i][j] = cosine_similarity(sentence_matrix[i].reshape(1, -1), sentence_matrix[j].reshape(1, -1)).squeeze()
+        ###############################################################################################
+
+        ##############################     GOD BLESS      ##############################################
+        ############################## advanced algorithm ##############################################
+        # 1. matrix multiple
+        '''
+                --- d1 ---       |  | |
+                --- d2 ---      d1 d2 d3
+                --- d3 ---       |  | |
+        '''
+        multiplied_matrix = np.dot(sentence_matrix, sentence_matrix.T)
+        # 2. divided each row by the matrix looks like below
+        #    using numpy broadcasting
+        '''
+            sqrt(d1*d1) sqrt(d2*d2) sqrt(d3*d3)
+        '''
+        dividing_matrix_row = np.sqrt(multiplied_matrix.diagonal())
+        divided_matrix = multiplied_matrix / dividing_matrix_row
+        # 3. divided each column by the matrix looks like below
+        '''
+            sqrt(d1*d1)
+            sqrt(d2*d2)
+            sqrt(d3*d3)
+        '''
+        dividing_matrix_col = dividing_matrix_row.reshape(-1, 1)
+        similiar_matrix = divided_matrix / dividing_matrix_col
+        ###############################################################################################
+
         return similiar_matrix
 
     def get_scores(self, similiar_matrix):

@@ -4,7 +4,10 @@
 # @Last Modified by:    
 # @Last Modified time:  
 
+import os
 import re
+import sys
+import time
 from pathlib import Path
 
 from featureExtraction import FeatureExtraction
@@ -12,6 +15,11 @@ from sentenceSplit import SentenceParser
 from textRank import TextRank
 
 cwd = Path(__file__).absolute().parent
+os.sys.path.insert(0, 'C:\\Code\\opinion')
+
+from fanjienlu.dao.hda_accessor import load_hda_news_list, load_hda_abstracts
+from fanjienlu.business.abstract_business.multi_doc_abstract import WeekSummary
+
 
 class multiple_extraction(object):
     
@@ -31,7 +39,10 @@ class multiple_extraction(object):
         # 4. call the textRank object
         textRank = TextRank()
         # 5. build the matrix for textRank
+        time_start = time.time()
         similiar_matrix = textRank.calculate_similarity(feature_matrix)
+        time_end = time.time()
+        print(time_end - time_start)
         # 6. calculate the score for each sentence
         results = textRank.get_scores(similiar_matrix)
         # 7. sort the results in descending order of score
@@ -57,11 +68,44 @@ class multiple_extraction(object):
                 vec_dict['dict'] = file
         return vec_dict
 
+def gen_weekly_summry(begindate, enddate, nsent=4, ncluster=5, k=3, n_sample=None):
+    '''
+        obtain the data from database, written by colleague
+    '''
+    if n_sample:
+        docs = load_hda_news_list(begindate, enddate)[:n_sample]
+    else:
+        docs = load_hda_news_list(begindate, enddate)
+    return docs
+
 if __name__ == '__main__':
+    # test interface
     doc = u'''今天湖人队打的非常好，科比此役复出贡献35分，5个篮板，10个助攻的数据，詹姆斯也贡献15分，12个篮板，12个助攻的准三双数据。
             NBA今天有十场比赛，其中最引人注目的就是洛杉矶湖人对金州勇士。科比拿到35分，复出新高，詹姆斯也拿到三双数据。湖人现在位列西部第二，勇士位列第一。
             在今天结束的比赛中，圣安东尼奥马刺队在莱昂纳德的带领下，引来挑战的火箭队。此役保罗贡献10个助攻，但是在第三节受伤离场。另一场焦点之战，湖人队大比分战胜勇士队。
             体坛快讯最新报道。科比迎来复出首场比赛，拿到全场最高35分带领全队取得胜利。詹姆斯取得三双。另一场比赛步行者战胜小牛。
     '''
     # print(SentenceParser.split_text_to_sentences(doc))
-    print(multiple_extraction.start(doc))
+    # print(multiple_extraction.start(doc))
+    
+    from fanjienlu.common import datetime_utils as dt
+
+    begindate=dt.gen_datetime(2018, 5, 14)
+    enddate = dt.gen_datetime(2018, 5, 15)
+    docs = gen_weekly_summry(begindate, enddate, n_sample=50)
+    
+    # test_data = '\n'.join(res)
+    # print(test_data)
+    # result = multiple_extraction.start(test_data)
+    # print(result)
+
+    from fanjienlu.algrithm.others.Clustering import Cluster, group_cluster, evaluate_clustering
+    from fanjienlu.business.term_business import term_process as term
+
+    docs_tokenized = term.tokenize(docs, pos=False, stopword=True)
+    _, labels = Cluster.spectral(docs_tokenized, 8)
+    docs = group_cluster(docs, labels, 8)
+    
+    test_string = '\n'.join(docs[2])
+    result = multiple_extraction.start(test_string)
+    print(result)
