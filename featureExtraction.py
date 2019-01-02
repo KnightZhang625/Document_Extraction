@@ -15,7 +15,7 @@ from sklearn.externals import joblib
 
 from preProcess import PreprocessAPI
 
-np.random.seed(3)
+# np.random.seed(3) comment this if don't use 42th line
 
 class WordToVector(object):
     '''

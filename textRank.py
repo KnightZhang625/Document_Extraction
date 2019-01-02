@@ -15,6 +15,7 @@ from numpy.random import random
 from sklearn.metrics.pairwise import cosine_similarity
 
 from featureExtraction import FeatureExtraction
+from sentenceSplit import SentenceParser
 
 
 class TextRank(object):
@@ -77,8 +78,10 @@ if __name__ == '__main__':
             在今天结束的比赛中，圣安东尼奥马刺队在莱昂纳德的带领下，引来挑战的火箭队。此役保罗贡献10个助攻，但是在第三节受伤离场。另一场焦点之战，湖人队大比分战胜勇士队。
             体坛快讯最新报道。科比迎来复出首场比赛，拿到全场最高35分带领全队取得胜利。詹姆斯取得三双。另一场比赛步行者战胜小牛。
     '''
-    doc = list(set([sentence for sentence in doc.split('。')]))
-    print(doc)
+
+    # call the SentenceParser to split the sentences
+    doc = SentenceParser.split_text_to_sentences(doc)
+    # print(doc)
     # sys.exit()
     feature_extraction = FeatureExtraction(vec_dict)
     feature_matrix = feature_extraction.extract(doc)
