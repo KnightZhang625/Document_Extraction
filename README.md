@@ -5,7 +5,8 @@
 
 Happy New Year !  
 finish the main api  
-next : use real data 
+optimize the feature extration step by using multiprocess, not very useful  
+optimize the step for calculating the similarity between the sentences, successful  
 
 ------------
 ### 27_Dec_2018
