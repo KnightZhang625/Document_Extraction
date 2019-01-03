@@ -1,6 +1,12 @@
 # Document_Extraction
 
 ------------
+### 03_Jan_2019
+
+evaluate the results  
+optimize the textRank algorithm  
+
+------------
 ### 02_Jan_2019
 
 Happy New Year !  
