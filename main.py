@@ -35,43 +35,63 @@ class multiple_extraction(object):
 
         # 2. split the sentences
         if remove_duplicate['flag']:
-            doc_split = SentenceParser.remove_duplicate_sentences(document, remove_duplicate['threshold'])
+            cls.doc_split = SentenceParser.remove_duplicate_sentences(document, remove_duplicate['threshold'])
         else:
-            doc_split = SentenceParser.split_text_to_sentences(document)
+            cls.doc_split = SentenceParser.split_text_to_sentences(document)
 
         # 3. build the feature matrix
-        feature_matrix = feature_extration.extract(doc_split)
+        feature_matrix = feature_extration.extract(cls.doc_split)
 
         # 4. call the textRank object
         textRank = TextRank()
 
         # 5. build the matrix for textRank
         time_start = time.time()
-        similiar_matrix = textRank.calculate_similarity(feature_matrix)
+        cls.similiar_matrix = textRank.calculate_similarity(feature_matrix)
         time_end = time.time()
         print(time_end - time_start)
 
         # 6. calculate the score for each sentence
-        results = textRank.get_scores(similiar_matrix)
+        results = textRank.get_scores(cls.similiar_matrix)
 
         # 7. sort the results in descending order of score
         results_sort = sorted(results.items(), key=lambda item:item[1], reverse=True)
         
         # 8. index the sentence
         candidate_index = [index for index, _ in results_sort[:n]]
-        abstract = []
-        for i in candidate_index:
-            try:
-                sentence = doc_split[i-1] + doc_split[i] + doc_split[i+1]
-            except IndexError:
-                sentence = doc_split[i]
-            abstract.append(sentence)
+        abstract = [cls.add_neighbor_sentence(i) for i in candidate_index]
+
         return abstract
 
         ######################## ignore the neighboring sentences #####################
         # extract_info = [doc_split[index] for index, _ in results_sort[:n]]
         # return extract_info
         ################################################################################
+    
+    @classmethod
+    def add_neighbor_sentence(cls, i):
+        sentence = cls.doc_split[i]
+        try:
+            if cls.similiar_matrix[i-1, i] >= 0.9:
+                sentence = cls.doc_split[i-1] + sentence
+                try:
+                    if cls.similiar_matrix[i-2, i] >= 0.85:
+                        sentence = cls.doc_split[i-2] + sentence
+                except IndexError:
+                    pass
+        except IndexError:
+            pass
+        try:
+            if cls.similiar_matrix[i, i+1] >= 0.9:
+                sentence = sentence + cls.doc_split[i+1]
+                try:
+                    if cls.similiar_matrix[i, i+2] >= 0.85:
+                        sentence = sentence + cls.doc_split[i+2]
+                except IndexError:
+                    pass
+        except IndexError:
+            pass
+        return sentence
 
     @classmethod
     def load_data(cls, default_dir='vec', user_dir=None):
