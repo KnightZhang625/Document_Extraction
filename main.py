@@ -24,7 +24,7 @@ from fanjienlu.business.abstract_business.multi_doc_abstract import WeekSummary
 class multiple_extraction(object):
     
     @classmethod
-    def start(cls, document, n=3, user_dir=None):
+    def start(cls, document, n=3, user_dir=None, remove_duplicate={'flag':False, 'threshold':None}):
         '''
             args : document : the document to be extracted
                    n        : the key sentences need to be extracted
@@ -33,7 +33,10 @@ class multiple_extraction(object):
         # 1. load the embedding data
         feature_extration = FeatureExtraction(cls.load_data(user_dir=user_dir))
         # 2. split the sentences
-        doc_split = SentenceParser.split_text_to_sentences(document)
+        if remove_duplicate['flag']:
+            doc_split = SentenceParser.remove_duplicate_sentences(document, remove_duplicate['threshold'])
+        else:
+            doc_split = SentenceParser.split_text_to_sentences(document)
         # 3. build the feature matrix
         feature_matrix = feature_extration.extract(doc_split)
         # 4. call the textRank object
@@ -88,17 +91,14 @@ if __name__ == '__main__':
     # print(SentenceParser.split_text_to_sentences(doc))
     # print(multiple_extraction.start(doc))
     
+    # obtain data from database
     from fanjienlu.common import datetime_utils as dt
 
     begindate=dt.gen_datetime(2018, 5, 14)
     enddate = dt.gen_datetime(2018, 5, 15)
     docs = gen_weekly_summry(begindate, enddate, n_sample=50)
     
-    # test_data = '\n'.join(res)
-    # print(test_data)
-    # result = multiple_extraction.start(test_data)
-    # print(result)
-
+    # clustering the document
     from fanjienlu.algrithm.others.Clustering import Cluster, group_cluster, evaluate_clustering
     from fanjienlu.business.term_business import term_process as term
 
@@ -106,6 +106,8 @@ if __name__ == '__main__':
     _, labels = Cluster.spectral(docs_tokenized, 8)
     docs = group_cluster(docs, labels, 8)
     
-    test_string = '\n'.join(docs[2])
-    result = multiple_extraction.start(test_string)
+    # extract from one cluster
+    test_string = '\n'.join(docs[3])
+    remove_duplicate = {'flag':True, 'threshold':1}
+    result = multiple_extraction.start(test_string, remove_duplicate=remove_duplicate)
     print(result)

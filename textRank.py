@@ -11,6 +11,7 @@ from pathlib import Path
 
 import networkx as nx
 import numpy as np
+from igraph import Graph
 from numpy.random import random
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -85,9 +86,35 @@ class TextRank(object):
                     .                         .               .
                     .                         .               .
             [s1 s2 s3 ... s_n]              [s_n]           [s_n]
+
+            both networkx and igraph could solve this problem
         '''
-        nx_graph = nx.from_numpy_array(similiar_matrix)
-        return nx.pagerank(nx_graph)
+        
+        ############################## use networkx #######################################
+        # nx_graph = nx.from_numpy_array(similiar_matrix)
+        # return nx.pagerank(nx_graph)
+        ###################################################################################
+
+        ######################## use igraph written in C #################################
+        # 1. build upper triangular matrix, remove duplicate item, i.e., s1 -> s2 and s2 -> s1
+        sentence_1, sentence_2 = similiar_matrix.nonzero()          # nonzero() returns two item, one is row, the other one is column under assumption of 2 dimensions
+        item_remove = []
+        for i in range(len(sentence_1)):
+            if sentence_1[i] > sentence_2[i]:                       # notice, sentence[i] gets the value which indicates the row of the original matrix
+                item_remove.append(i)
+        
+        sentence_1 = np.delete(sentence_1, item_remove)
+        sentence_2 = np.delete(sentence_2, item_remove)
+
+        # 2. build the graph
+        weights = [similiar_matrix[i, j] for (i, j) in zip(sentence_1, sentence_2)]
+        edgelist = list(zip(sentence_1.tolist(), sentence_2.tolist()))
+
+        g = Graph(edgelist)
+        scores = g.pagerank(weights=weights)
+        scores_index = {index : score for index, score in enumerate(scores)}
+        return scores_index
+        ##################################################################################
 
 if __name__ == '__main__':
     # # the below is just for test

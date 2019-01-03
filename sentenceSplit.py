@@ -197,5 +197,5 @@ class SentenceParser(object):
                 cleaned_sentences.append(s)
                 dup_counter[s] += 1
                 
-        return ''.join(cleaned_sentences)
+        return cleaned_sentences
 
