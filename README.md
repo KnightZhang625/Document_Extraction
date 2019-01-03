@@ -5,6 +5,7 @@
 
 evaluate the results  
 optimize the textRank algorithm  
+optimize the selection of the abstrats  
 
 ------------
 ### 02_Jan_2019

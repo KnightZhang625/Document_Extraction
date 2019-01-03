@@ -32,27 +32,46 @@ class multiple_extraction(object):
         '''
         # 1. load the embedding data
         feature_extration = FeatureExtraction(cls.load_data(user_dir=user_dir))
+
         # 2. split the sentences
         if remove_duplicate['flag']:
             doc_split = SentenceParser.remove_duplicate_sentences(document, remove_duplicate['threshold'])
         else:
             doc_split = SentenceParser.split_text_to_sentences(document)
+
         # 3. build the feature matrix
         feature_matrix = feature_extration.extract(doc_split)
+
         # 4. call the textRank object
         textRank = TextRank()
+
         # 5. build the matrix for textRank
         time_start = time.time()
         similiar_matrix = textRank.calculate_similarity(feature_matrix)
         time_end = time.time()
         print(time_end - time_start)
+
         # 6. calculate the score for each sentence
         results = textRank.get_scores(similiar_matrix)
+
         # 7. sort the results in descending order of score
         results_sort = sorted(results.items(), key=lambda item:item[1], reverse=True)
+        
         # 8. index the sentence
-        extract_info = [doc_split[index] for index, _ in results_sort[:3]]
-        return extract_info
+        candidate_index = [index for index, _ in results_sort[:n]]
+        abstract = []
+        for i in candidate_index:
+            try:
+                sentence = doc_split[i-1] + doc_split[i] + doc_split[i+1]
+            except IndexError:
+                sentence = doc_split[i]
+            abstract.append(sentence)
+        return abstract
+
+        ######################## ignore the neighboring sentences #####################
+        # extract_info = [doc_split[index] for index, _ in results_sort[:n]]
+        # return extract_info
+        ################################################################################
 
     @classmethod
     def load_data(cls, default_dir='vec', user_dir=None):
@@ -107,7 +126,7 @@ if __name__ == '__main__':
     docs = group_cluster(docs, labels, 8)
     
     # extract from one cluster
-    test_string = '\n'.join(docs[3])
-    remove_duplicate = {'flag':True, 'threshold':1}
+    test_string = '\n'.join(docs[2])
+    remove_duplicate = {'flag':True, 'threshold':1}     # remove the duplicate sentences
     result = multiple_extraction.start(test_string, remove_duplicate=remove_duplicate)
     print(result)
