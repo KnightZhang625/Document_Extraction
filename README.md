@@ -1,6 +1,11 @@
 # Document_Extraction
 
 ------------
+### 04_Jan_2019
+
+add requirements.txt
+
+------------
 ### 03_Jan_2019
 
 evaluate the results  
